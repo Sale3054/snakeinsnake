@@ -3,22 +3,30 @@
 
 import pygame
 import time
-
+import random
 
 COLOR = "green"
 DIRECTION = "DOWN"
+
 
 CLOCK = pygame.time.Clock()
 SPEED = 10
 PIECE_WIDTH = 10
 GAME_OVER = False
+score = 0
 
 S_HEIGHT = 1280
 S_WIDTH = 720
 
 
 def setBackground():
-    screen.fill("black")
+    screen.fill("red")
+    pos = (10, 10)
+    dim = (S_HEIGHT-20, S_WIDTH-20)
+    shape_vec = pygame.math.Vector2(pos)
+    overlaid_shape = pygame.Rect(shape_vec, dim)
+    pygame.draw.rect(screen, "black", overlaid_shape)
+
 
 
 def keyHandler(keys, snake_instance):
@@ -71,6 +79,46 @@ class LinkedList:
             newNode.prev = self.tail
             self.tail = self.tail.next
 
+class Fruit:
+    def __init__(self):
+        self.fruit_exists = False
+        self.pos = (0,0)
+        self.fruit_rec = None
+        self.color = "yellow"
+
+    def drawFruit(self):
+        if self.fruit_exists:
+            pygame.draw.rect(screen, self.color, self.fruit_rec)
+
+    def createFruit(self):
+        if self.fruit_exists is False:
+            self.pos = (random.randrange(40, S_HEIGHT-40), random.randrange(40, S_WIDTH-40))
+            dim = (10, 10)
+            shape_vec = pygame.math.Vector2(self.pos)
+            self.fruit_rec = pygame.Rect(shape_vec, dim)
+            self.fruit_exists = True
+
+    def checkPos(self, pos, snake):
+        global score
+        print (f"pos: {self.pos}, curr: {pos}")
+        if (pos[0] < (self.pos[0] + 5) or pos[0] < (self.pos[0]-5)) and \
+        (pos[1] < (self.pos[1] + 5) or pos[1] > (self.pos[1] - 5)):
+            score += 10
+            tail = snake.snake_LL.tail
+            tail_pos = snake.snake_LL.tail.pos
+            if tail.dir_queue[0] == "LEFT":
+                # x, y
+                tail_pos = (tail_pos[0] - PIECE_WIDTH, tail_pos[1])
+            elif tail.dir_queue[0] == "RIGHT":
+                tail_pos = (tail_pos[0] + PIECE_WIDTH, tail_pos[1])
+            elif tail.dir_queue[0] == "UP":
+                tail_pos = (tail_pos[0], tail_pos[1] - 10)
+            elif tail.dir_queue[0] == "DOWN":
+                tail_pos = (tail_pos[0], tail_pos[1] + 10)
+
+            snake.snake_LL.addNode(tail_pos)
+            self.fruit_exists = False
+            self.createFruit()
 
 class Snake:
     def __init__(self, snake_pieces: LinkedList):
@@ -108,6 +156,7 @@ class Snake:
         curr = self.snake_LL.head
         posList = []
 
+
         while curr is not None:
             snake.handlePieceDir(curr)
             snake_vec = pygame.math.Vector2(curr.pos)
@@ -118,19 +167,19 @@ class Snake:
             if curr is not None:
                 self.go_obj.checkGameOver(posList, curr.pos, self.snake_LL)
                 posList.append(curr.pos)
+                fruit.checkPos(curr.pos, snake)
 
 
 class GameOver:
     def checkGameOver(self, posList, curr, LL):
         if curr in posList:
-            print("THIS ONE")
             self.load_game_over()
 
         pos = LL.head.pos
 
-        if pos[0] > S_WIDTH - 10 or pos[0] < 0:
+        if pos[0] > S_HEIGHT - 10 or pos[0] < 0:
             self.load_game_over()
-        if pos[1] > S_HEIGHT - 10 or pos[1] < 0:
+        if pos[1] > S_WIDTH - 10 or pos[1] < 0:
             self.load_game_over()
 
     def load_game_over(self):
@@ -139,11 +188,17 @@ class GameOver:
         setBackground()
         GOfont = pygame.font.SysFont("Consolas", 50)
         title_card = GOfont.render("GAME OVER...", True, "RED")
+        score_card = GOfont.render("SCORE: 69420", True, "GREEN")
+
+        score_rect = score_card.get_rect()
+        score_rect.midtop = (((S_HEIGHT/2)), (S_WIDTH/2)-120)
 
         title_rect = title_card.get_rect()
         title_rect.midtop = (S_HEIGHT/2, S_WIDTH/4)
 
         screen.blit(title_card, title_rect)
+        screen.blit(score_card, score_rect)
+
         pygame.display.flip()
         time.sleep(4)
         quit()
@@ -152,15 +207,14 @@ class GameOver:
 if __name__ == "__main__":
     # pygame setup
     pygame.init()
-
-    screen = pygame.display.set_mode((S_HEIGHT, S_WIDTH))
+    screen = pygame.display.set_mode([S_HEIGHT, S_WIDTH])
     pygame.display.set_caption("snake_in_snake")
 
     # get the center of the screen
     player_pos = (screen.get_width() / 2, screen.get_height() / 2)
 
     snake = Snake(LinkedList(player_pos))
-
+    fruit = Fruit()
     while True:
 
         # poll for events
@@ -173,6 +227,10 @@ if __name__ == "__main__":
 
         # fill the screen with a color to wipe away anything from last frame
         setBackground()
+
+        # create a fruit if there isn't one on the board, and draw it on the screen
+        fruit.createFruit()
+        fruit.drawFruit()
 
         # update the snake body positions, and draw them on the screen
         snake.updateSectionPositions()
