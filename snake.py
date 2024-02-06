@@ -68,16 +68,23 @@ class LinkedList:
             self.addNode(
                 (startingPos[0], (startingPos[1] - section*PIECE_WIDTH)))
 
-    def addNode(self, startingPos: tuple):
+    def addNode(self, startingPos: tuple, stored_dir = None):
         if self.head is None:
             self.head = Node(startingPos)
             self.tail = self.head
+            return None
 
         else:
             newNode = Node(startingPos)
+            if stored_dir == None:
+                stored_dir = []
+            self.dir_queue = [DIRECTION] + stored_dir
             self.tail.next = newNode
             newNode.prev = self.tail
-            self.tail = self.tail.next
+            newNode.next = None
+            self.tail = newNode
+            print(f"Adding node w/: {newNode.dir_queue}")
+            return newNode
 
 class Fruit:
     def __init__(self):
@@ -93,30 +100,28 @@ class Fruit:
     def createFruit(self):
         if self.fruit_exists is False:
             self.pos = (random.randrange(40, S_HEIGHT-40), random.randrange(40, S_WIDTH-40))
-            dim = (10, 10)
+            dim = (20, 20)
             shape_vec = pygame.math.Vector2(self.pos)
             self.fruit_rec = pygame.Rect(shape_vec, dim)
             self.fruit_exists = True
 
-    def checkPos(self, pos, snake):
+    def checkPos(self,snake_rec, stored_dir = None):
         global score
-        print (f"pos: {self.pos}, curr: {pos}")
-        if (pos[0] < (self.pos[0] + 5) or pos[0] < (self.pos[0]-5)) and \
-        (pos[1] < (self.pos[1] + 5) or pos[1] > (self.pos[1] - 5)):
+        if pygame.Rect.colliderect(snake_rec, self.fruit_rec):
             score += 10
             tail = snake.snake_LL.tail
             tail_pos = snake.snake_LL.tail.pos
             if tail.dir_queue[0] == "LEFT":
-                # x, y
                 tail_pos = (tail_pos[0] - PIECE_WIDTH, tail_pos[1])
             elif tail.dir_queue[0] == "RIGHT":
                 tail_pos = (tail_pos[0] + PIECE_WIDTH, tail_pos[1])
             elif tail.dir_queue[0] == "UP":
-                tail_pos = (tail_pos[0], tail_pos[1] - 10)
+                tail_pos = (tail_pos[0], tail_pos[1] - PIECE_WIDTH)
             elif tail.dir_queue[0] == "DOWN":
-                tail_pos = (tail_pos[0], tail_pos[1] + 10)
-
-            snake.snake_LL.addNode(tail_pos)
+                tail_pos = (tail_pos[0], tail_pos[1] + PIECE_WIDTH)
+            print("Adding body part")
+            t = snake.snake_LL.addNode(tail_pos, stored_dir)
+            print(f"Inside tail dir_queue: {t.dir_queue}, {t.pos}")    
             self.fruit_exists = False
             self.createFruit()
 
@@ -155,31 +160,39 @@ class Snake:
     def updateSectionPositions(self):
         curr = self.snake_LL.head
         posList = []
-
-
+        hR = None
         while curr is not None:
+
+            stored_dir = [self.snake_LL.tail.dir_queue[0]]
             snake.handlePieceDir(curr)
             snake_vec = pygame.math.Vector2(curr.pos)
             snake_rect = pygame.Rect(snake_vec, (PIECE_WIDTH, PIECE_WIDTH))
+            if hR == None: 
+                hR = snake_rect
             pygame.draw.rect(screen, curr.color, snake_rect)
-            curr = curr.next
 
             if curr is not None:
+                self.go_obj.checkOverlap(hR, snake_rect)
                 self.go_obj.checkGameOver(posList, curr.pos, self.snake_LL)
                 posList.append(curr.pos)
-                fruit.checkPos(curr.pos, snake)
+                fruit.checkPos(snake_rect, stored_dir)
+            curr = curr.next
 
 
 class GameOver:
-    def checkGameOver(self, posList, curr, LL):
-        if curr in posList:
+    def checkOverlap(self, hR, cR):
+        if hR is not cR and pygame.Rect.colliderect(hR, cR):
+            print("Game over because snake body overlap")
             self.load_game_over()
 
+    def checkGameOver(self, posList, curr, LL):
         pos = LL.head.pos
 
         if pos[0] > S_HEIGHT - 10 or pos[0] < 0:
+            print("game over because bounds")
             self.load_game_over()
         if pos[1] > S_WIDTH - 10 or pos[1] < 0:
+            print("game over because bounds")
             self.load_game_over()
 
     def load_game_over(self):
