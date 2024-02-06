@@ -80,8 +80,8 @@ class LinkedList:
         else:
             newNode = Node(startingPos)
             if stored_dir == None:
-                stored_dir = [DIRECTION]
-            self.dir_queue = stored_dir
+                stored_dir = []
+            self.dir_queue = stored_dir + [DIRECTION]
             self.tail.next = newNode
             newNode.prev = self.tail
             newNode.next = None
@@ -116,13 +116,13 @@ class Fruit:
             X, Y = snake.snake_LL.tail.pos
             
             if tail.dir_queue[0] == "LEFT":
-                tail_pos = X + PIECE_WIDTH 
+                X += PIECE_WIDTH 
             elif tail.dir_queue[0] == "RIGHT":
-                tail_pos = X - PIECE_WIDTH
+                X -= PIECE_WIDTH
             elif tail.dir_queue[0] == "UP":
-                tail_pos = Y + PIECE_WIDTH 
+                Y += PIECE_WIDTH 
             elif tail.dir_queue[0] == "DOWN":
-                tail_pos = Y - PIECE_WIDTH
+                Y -= PIECE_WIDTH
             t = snake.snake_LL.addNode((X, Y))
             
             self.fruit_exists = False
@@ -175,9 +175,9 @@ class Snake:
                 self.go_obj.checkGameOver(posList, curr.pos, self.snake_LL)
                 posList.append(curr.pos)
                 fruit.checkPos(snake_rect, stored_dir)
+            snake.handlePieceDir(curr)
             snake_vec = pygame.math.Vector2(curr.pos)
             snake_rect = pygame.Rect(snake_vec, (PIECE_WIDTH, PIECE_WIDTH))
-            snake.handlePieceDir(curr)
             pygame.draw.rect(screen, curr.color, snake_rect)
             curr = curr.next
 
@@ -252,16 +252,6 @@ if __name__ == "__main__":
         # update the snake body positions, and draw them on the screen
         snake.updateSectionPositions()
         CLOCK.tick(30)
-
-        zeros = pygame.math.Vector2(0, 0)
-        xplus = pygame.math.Vector2(100, 0)
-        yplus = pygame.math.Vector2(0, 100)
-        z_rect = pygame.Rect(zeros, (10, 10))
-        x_rect = pygame.Rect(xplus, (10,10))
-        y_rect = pygame.Rect(yplus, (10,10))
-        pygame.draw.rect(screen, 'orange', z_rect)
-        pygame.draw.rect(screen, "black", x_rect)
-        pygame.draw.rect(screen, "white", y_rect)
 
         # flip() the display to put your work on screen
         pygame.display.flip()
