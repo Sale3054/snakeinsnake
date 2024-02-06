@@ -1,6 +1,7 @@
 #!/bin/python3
 # Example file showing a circle moving on screen
 
+from tkinter import W
 import pygame
 import time
 import random
@@ -58,6 +59,7 @@ class Node:
         self.dir_queue = [DIRECTION]
         self.pos = startingPos
         self.color = COLOR
+        self.id = 0
 
 
 class LinkedList:
@@ -72,18 +74,19 @@ class LinkedList:
         if self.head is None:
             self.head = Node(startingPos)
             self.tail = self.head
+            self.head.id = 0
             return None
 
         else:
             newNode = Node(startingPos)
             if stored_dir == None:
-                stored_dir = []
-            self.dir_queue = [DIRECTION] + stored_dir
+                stored_dir = [DIRECTION]
+            self.dir_queue = stored_dir
             self.tail.next = newNode
             newNode.prev = self.tail
             newNode.next = None
+            newNode.id = newNode.prev.id + 1
             self.tail = newNode
-            print(f"Adding node w/: {newNode.dir_queue}")
             return newNode
 
 class Fruit:
@@ -110,18 +113,18 @@ class Fruit:
         if pygame.Rect.colliderect(snake_rec, self.fruit_rec):
             score += 10
             tail = snake.snake_LL.tail
-            tail_pos = snake.snake_LL.tail.pos
+            X, Y = snake.snake_LL.tail.pos
+            
             if tail.dir_queue[0] == "LEFT":
-                tail_pos = (tail_pos[0] - PIECE_WIDTH, tail_pos[1])
+                tail_pos = X + PIECE_WIDTH 
             elif tail.dir_queue[0] == "RIGHT":
-                tail_pos = (tail_pos[0] + PIECE_WIDTH, tail_pos[1])
+                tail_pos = X - PIECE_WIDTH
             elif tail.dir_queue[0] == "UP":
-                tail_pos = (tail_pos[0], tail_pos[1] - PIECE_WIDTH)
+                tail_pos = Y + PIECE_WIDTH 
             elif tail.dir_queue[0] == "DOWN":
-                tail_pos = (tail_pos[0], tail_pos[1] + PIECE_WIDTH)
-            print("Adding body part")
-            t = snake.snake_LL.addNode(tail_pos, stored_dir)
-            print(f"Inside tail dir_queue: {t.dir_queue}, {t.pos}")    
+                tail_pos = Y - PIECE_WIDTH
+            t = snake.snake_LL.addNode((X, Y))
+            
             self.fruit_exists = False
             self.createFruit()
 
@@ -161,22 +164,23 @@ class Snake:
         curr = self.snake_LL.head
         posList = []
         hR = None
+        stored_dir = self.snake_LL.tail.dir_queue
         while curr is not None:
-
-            stored_dir = [self.snake_LL.tail.dir_queue[0]]
-            snake.handlePieceDir(curr)
             snake_vec = pygame.math.Vector2(curr.pos)
             snake_rect = pygame.Rect(snake_vec, (PIECE_WIDTH, PIECE_WIDTH))
             if hR == None: 
                 hR = snake_rect
-            pygame.draw.rect(screen, curr.color, snake_rect)
-
-            if curr is not None:
+            if curr is not None: 
                 self.go_obj.checkOverlap(hR, snake_rect)
                 self.go_obj.checkGameOver(posList, curr.pos, self.snake_LL)
                 posList.append(curr.pos)
                 fruit.checkPos(snake_rect, stored_dir)
+            snake_vec = pygame.math.Vector2(curr.pos)
+            snake_rect = pygame.Rect(snake_vec, (PIECE_WIDTH, PIECE_WIDTH))
+            snake.handlePieceDir(curr)
+            pygame.draw.rect(screen, curr.color, snake_rect)
             curr = curr.next
+
 
 
 class GameOver:
@@ -201,7 +205,7 @@ class GameOver:
         setBackground()
         GOfont = pygame.font.SysFont("Consolas", 50)
         title_card = GOfont.render("GAME OVER...", True, "RED")
-        score_card = GOfont.render("SCORE: 69420", True, "GREEN")
+        score_card = GOfont.render(f"SCORE: {score}", True, "GREEN")
 
         score_rect = score_card.get_rect()
         score_rect.midtop = (((S_HEIGHT/2)), (S_WIDTH/2)-120)
@@ -248,6 +252,16 @@ if __name__ == "__main__":
         # update the snake body positions, and draw them on the screen
         snake.updateSectionPositions()
         CLOCK.tick(30)
+
+        zeros = pygame.math.Vector2(0, 0)
+        xplus = pygame.math.Vector2(100, 0)
+        yplus = pygame.math.Vector2(0, 100)
+        z_rect = pygame.Rect(zeros, (10, 10))
+        x_rect = pygame.Rect(xplus, (10,10))
+        y_rect = pygame.Rect(yplus, (10,10))
+        pygame.draw.rect(screen, 'orange', z_rect)
+        pygame.draw.rect(screen, "black", x_rect)
+        pygame.draw.rect(screen, "white", y_rect)
 
         # flip() the display to put your work on screen
         pygame.display.flip()
