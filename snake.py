@@ -251,7 +251,7 @@ if __name__ == "__main__":
 
         # update the snake body positions, and draw them on the screen
         snake.updateSectionPositions()
-        CLOCK.tick(30)
+        CLOCK.tick(120)
 
         # flip() the display to put your work on screen
         pygame.display.flip()
